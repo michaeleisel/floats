@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		F33242A52639CED0000B85F9 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = F33242A42639CED0000B85F9 /* main.c */; };
+		F33242A52639CED0000B85F9 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F33242A42639CED0000B85F9 /* main.cpp */; };
+		F33242B3263A0BE7000B85F9 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F33242B2263A0BE7000B85F9 /* QuartzCore.framework */; };
+		F33242C4263A0E16000B85F9 /* libryu.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F33242C3263A0E16000B85F9 /* libryu.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +26,12 @@
 
 /* Begin PBXFileReference section */
 		F33242A12639CED0000B85F9 /* floats */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = floats; sourceTree = BUILT_PRODUCTS_DIR; };
-		F33242A42639CED0000B85F9 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		F33242A42639CED0000B85F9 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		F33242AC2639D93F000B85F9 /* floats.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = floats.h; sourceTree = "<group>"; };
+		F33242AE2639D970000B85F9 /* pows.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pows.h; sourceTree = "<group>"; };
+		F33242B2263A0BE7000B85F9 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		F33242C0263A0DF7000B85F9 /* ryu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ryu.h; sourceTree = "<group>"; };
+		F33242C3263A0E16000B85F9 /* libryu.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libryu.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +39,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F33242C4263A0E16000B85F9 /* libryu.a in Frameworks */,
+				F33242B3263A0BE7000B85F9 /* QuartzCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,6 +52,7 @@
 			children = (
 				F33242A32639CED0000B85F9 /* floats */,
 				F33242A22639CED0000B85F9 /* Products */,
+				F33242B1263A0BE7000B85F9 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -57,9 +67,21 @@
 		F33242A32639CED0000B85F9 /* floats */ = {
 			isa = PBXGroup;
 			children = (
-				F33242A42639CED0000B85F9 /* main.c */,
+				F33242C3263A0E16000B85F9 /* libryu.a */,
+				F33242C0263A0DF7000B85F9 /* ryu.h */,
+				F33242A42639CED0000B85F9 /* main.cpp */,
+				F33242AC2639D93F000B85F9 /* floats.h */,
+				F33242AE2639D970000B85F9 /* pows.h */,
 			);
 			path = floats;
+			sourceTree = "<group>";
+		};
+		F33242B1263A0BE7000B85F9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F33242B2263A0BE7000B85F9 /* QuartzCore.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -118,7 +140,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F33242A52639CED0000B85F9 /* main.c in Sources */,
+				F33242A52639CED0000B85F9 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,6 +264,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = F53BR3BJXH;
 				ENABLE_HARDENED_RUNTIME = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/floats",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -252,6 +278,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = F53BR3BJXH;
 				ENABLE_HARDENED_RUNTIME = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/floats",
+				);
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
