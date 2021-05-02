@@ -273,6 +273,7 @@
 		F33242A92639CED0000B85F9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_X86_VECTOR_INSTRUCTIONS = avx2;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = F53BR3BJXH;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -288,6 +289,7 @@
 		F33242AA2639CED0000B85F9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_X86_VECTOR_INSTRUCTIONS = avx2;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = F53BR3BJXH;
 				ENABLE_HARDENED_RUNTIME = YES;

@@ -87,6 +87,33 @@ void handleUncommonCases(double d, char *buffer) {
     }
 }
 
+__used static void u8(__m128i i) {
+    uint8_t buffer[16] = {0};
+    _mm_storeu_si128((__m128i *)buffer, i);
+    for (int i = 0; i < 16; i++) {
+        printf("%u, ", buffer[i]);
+    }
+    printf("\n");
+}
+
+__used static void u16(__m128i i) {
+    uint16_t buffer[8] = {0};
+    _mm_storeu_si128((__m128i *)buffer, i);
+    for (int i = 0; i < 8; i++) {
+        printf("%u, ", buffer[i]);
+    }
+    printf("\n");
+}
+
+__used static void u32(__m128i i) {
+    uint32_t buffer[4] = {0};
+    _mm_storeu_si128((__m128i *)buffer, i);
+    for (int i = 0; i < 4; i++) {
+        printf("%u, ", buffer[i]);
+    }
+    printf("\n");
+}
+
 // Note that NaN and infinity are not allowed in JSON
 // todo: add subnormal/infinity tests
 void new_mult_style(double d, char *buffer) {
@@ -134,11 +161,30 @@ void new_mult_style(double d, char *buffer) {
     uint16_t lohi4 = lo8 / 10000;
     uint16_t hilo4 = hi8 % 10000;
     uint16_t hihi4 = hi8 / 10000;
+    __m128i values = _mm_setr_epi32(hihi4, hilo4, lohi4, lolo4);
+    __m128i hundreds = _mm_set1_epi32(100);
+    __m128i quots = _mm_srli_epi32(values, 2);
+    quots = _mm_mullo_epi32(quots, _mm_set1_epi32(5243));
+    quots = _mm_srli_epi32(quots, 17);
+    __m128i rems = _mm_sub_epi32(values, _mm_mullo_epi32(quots, hundreds));
+    // shift over for blending
+    rems = _mm_slli_epi32(rems, 16);
+    __m128i blended = _mm_blend_epi16(quots, rems, 0xaa);
+    __m128i interleaved = _mm_unpacklo_epi16(quots, rems);
+    __m128i tenDividers = _mm_set1_epi16(-13107);
+    __m128i quots2 = _mm_mullo_epi16(interleaved, tenDividers);
+    __m128i rems2 = _mm_sub_epi16(interleaved, quots2);
+    __m128i interleaved2 = _mm_unpacklo_epi8(quots2, rems2);
+    __m128i zeroChars = _mm_set1_epi8('0');
+    _mm_add_epi8(interleaved2, zeroChars);
+    _mm_storeu_si128((__m128i *)buffer, interleaved2);
+    //char bytes[16] __attribute__ ((aligned (16)));
+    //_mm_storeu_si128((__m128i *)buffer, interleaved);
     // Could gate each of these memcpys with an if statement, then finding the zero cutoff is easier
-    memcpy(buffer, kBigStrings[hihi4], 4);
+    /*memcpy(buffer, kBigStrings[hihi4], 4);
     memcpy(buffer + 4, kBigStrings[hilo4], 4);
     memcpy(buffer + 8, kBigStrings[lohi4], 4);
-    memcpy(buffer + 12, kBigStrings[lolo4], 4);
+    memcpy(buffer + 12, kBigStrings[lolo4], 4);*/
 
     // Remove trailing zeros
     char *mantissaEnd = buffer - 1; // Remove '.' if unnecessary
@@ -151,7 +197,7 @@ void new_mult_style(double d, char *buffer) {
     buffer = mantissaEnd; // Just overwrite what we had
 
     // Add exponent
-    int32_t target = -pow10 + 17;
+    int32_t target = -pow10 + 17 - 1 /* account for digit to left of decimal */;
     if (target == 0) {
         *buffer = '\0';
         return;
