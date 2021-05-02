@@ -167,17 +167,21 @@ void new_mult_style(double d, char *buffer) {
     quots = _mm_mullo_epi32(quots, _mm_set1_epi32(5243));
     quots = _mm_srli_epi32(quots, 17);
     __m128i rems = _mm_sub_epi32(values, _mm_mullo_epi32(quots, hundreds));
-    // shift over for blending
-    rems = _mm_slli_epi32(rems, 16);
-    __m128i blended = _mm_blend_epi16(quots, rems, 0xaa);
-    __m128i interleaved = _mm_unpacklo_epi16(quots, rems);
-    __m128i tenDividers = _mm_set1_epi16(-13107);
+    __m128i interleaved = _mm_blend_epi16(quots, _mm_slli_epi32(rems, 16), 0xaa);
+    __m128i quots2 = _mm_mullo_epi16(interleaved, _mm_set1_epi16(205));
+    quots2 = _mm_srli_epi16(quots2, 11);
+    __m128i rems2 = _mm_sub_epi16(interleaved, _mm_mullo_epi16(quots2, _mm_set1_epi16(10)));
+    //__m128i interleaved2 = _mm_blendv_epi8(quots2, _mm_slli_epi16(rems2, 8), _mm_set1_epi8(0xaa));
+    __m128i interleaved2 = _mm_blendv_epi8(quots2, _mm_slli_epi16(rems2, 8), _mm_set1_epi16(0xff00));
+    interleaved2 = _mm_add_epi8(interleaved2, _mm_set1_epi8('0'));
+    _mm_storeu_si128((__m128i *)buffer, interleaved2);
+    /*__m128i tenDividers = _mm_set1_epi16(-13107);
     __m128i quots2 = _mm_mullo_epi16(interleaved, tenDividers);
     __m128i rems2 = _mm_sub_epi16(interleaved, quots2);
     __m128i interleaved2 = _mm_unpacklo_epi8(quots2, rems2);
     __m128i zeroChars = _mm_set1_epi8('0');
     _mm_add_epi8(interleaved2, zeroChars);
-    _mm_storeu_si128((__m128i *)buffer, interleaved2);
+    _mm_storeu_si128((__m128i *)buffer, interleaved2);*/
     //char bytes[16] __attribute__ ((aligned (16)));
     //_mm_storeu_si128((__m128i *)buffer, interleaved);
     // Could gate each of these memcpys with an if statement, then finding the zero cutoff is easier
@@ -231,7 +235,7 @@ int main(int argc, const char * argv[]) {
     t(INFINITY);
     t(-INFINITY);
     t(NAN);
-    while (0 /* for profiling */) {
+    while (1 /* for profiling */) {
         benchmark("new_mult_style", new_mult_style);
     }
     //benchmark("c_style", c_style);
