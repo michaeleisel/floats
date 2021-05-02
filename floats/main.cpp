@@ -73,7 +73,7 @@ void cpp_style(double d, char *buffer) {
     std::to_string(d);
 }
 
-void handleUncommons(double d, char *buffer) {
+void handleUncommonCases(double d, char *buffer) {
     if (std::isinf(d)) {
         if (d < 0) {
             (*buffer++) = '-';
@@ -88,21 +88,28 @@ void handleUncommons(double d, char *buffer) {
 }
 
 // Note that NaN and infinity are not allowed in JSON
+// todo: add subnormal/infinity tests
 void new_mult_style(double d, char *buffer) {
-    // todo: subnormals, infinity checks
+    // Decompose double
     uint64_t bits = 0;
     memcpy(&bits, &d, sizeof(d));
     uint64_t mantissa = (bits & ((~0ULL) >> 12)) | (1ULL << 52);
     int exp = ((bits >> 52) & 0x7FF) - 1023;
+
+    // Handle uncommon cases
     if (unlikely(exp == 1024 /* infinite or NaN */ || (exp == -1023 && mantissa != (1ULL << 52)/* subnormal */))) {
-        handleUncommons(d, buffer);
+        handleUncommonCases(d, buffer);
         return;
     }
+
+    // Handle if negative
     bool isNegative = bits >> 63;
     if (isNegative) {
         buffer[0] = '-';
         buffer++;
     }
+
+    // Compute product
     PowerConversion conversion = kPowerConversions[exp];
     int16_t pow10 = conversion.power;
     if (mantissa > conversion.mantissaCutoff) {
@@ -115,6 +122,8 @@ void new_mult_style(double d, char *buffer) {
     power += (exp - 52);
     __uint128_t product128 = ((__uint128_t)pair.mantissa) * mantissa;
     uint64_t product = (uint64_t)(product128 >> (-power));
+
+    // Write out digits
     uint64_t first = product / 10000000000000000ULL;
     product -= first * 10000000000000000ULL;
     (*buffer++) = '0' + first;
@@ -125,23 +134,13 @@ void new_mult_style(double d, char *buffer) {
     uint16_t lohi4 = lo8 / 10000;
     uint16_t hilo4 = hi8 % 10000;
     uint16_t hihi4 = hi8 / 10000;
+    // Could gate each of these memcpys with an if statement, then finding the zero cutoff is easier
     memcpy(buffer, kBigStrings[hihi4], 4);
     memcpy(buffer + 4, kBigStrings[hilo4], 4);
     memcpy(buffer + 8, kBigStrings[lohi4], 4);
-    // Could gate each of these memcpys with an if statement, then finding the zero cutoff is easier
     memcpy(buffer + 12, kBigStrings[lolo4], 4);
-    /*char trailingZeros = 0;
-    if (lo8) {
-        trailingZeros = lolo4 ? 12 : 8;
-    } else {
-        trailingZeros = hilo4 ? 4 : 0;
-    }
-    for (int i = trailingZeros + 3; i >= trailingZeros; i--) {
-        if (buffer[i] != '0') {
-            buffer[i + 1] = '\0';
-            break;
-        }
-    }*/
+
+    // Remove trailing zeros
     char *mantissaEnd = buffer - 1; // Remove '.' if unnecessary
     for (int i = 15; i >= 0; i--) {
         if (buffer[i] != '0') {
@@ -150,8 +149,11 @@ void new_mult_style(double d, char *buffer) {
         }
     }
     buffer = mantissaEnd; // Just overwrite what we had
-    /*int32_t target = -pow10 + 17;
+
+    // Add exponent
+    int32_t target = -pow10 + 17;
     if (target == 0) {
+        *buffer = '\0';
         return;
     }
     if (target < 0) {
@@ -159,36 +161,14 @@ void new_mult_style(double d, char *buffer) {
         target = -target;
     }
     (*buffer++) = 'e';
-    char *stringStart = kBigStrings[target];
-    stringStart++; // We know it's limited to 3 digits, so we can assume the first digit in target is 0
-    char *string = stringStart;
-    while (*string == '0') { // This loop would be problematic if target was 0, but we've checked above that it's not
-        string++;
+    const char *string = kBigStrings[target];
+    if (unlikely(target >= 100)) {
+        (*buffer++) = string[1];
     }
-    char length = 3 - (string - stringStart);
-    memcpy(buffer, string, length);
-    buffer[length] = '\0';*/
-
-    /*int i = 0;
-    for (; i < 15; i += 3) {
-        // lldiv_t result = lldiv(product, 1000);
-        // const char *string = kStrings[result.rem];
-        // product = result.quot;
-        const char *string = kStrings[product % 1000];
-        buffer[i] = string[0];
-        buffer[i + 1] = string[1];
-        buffer[i + 2] = string[2];
-        product /= 1000;
+    if (unlikely(target >= 10)) {
+        (*buffer++) = string[2];
     }
-    buffer[i++] = '0' + product % 10;
-    buffer[i++] = '0' + product / 10;*/
-    /*for (int i = 0; i < 16; i++) {
-        // lldiv_t result = lldiv(product, 10);
-        // buffer[15 - i] = '0' + result.rem;
-        // product = result.quot;
-        // buffer[15 - i] = '0' + (product % 10);
-        // product /= 10;
-    }*/
+    (*buffer++) = string[3];
 }
 
 void absl_go(double d, char *buffer) {
