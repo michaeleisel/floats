@@ -4,7 +4,7 @@
 #include "pows.h"
 #include "floats.h"
 #include <string>
-#include "ryu.h"
+#include "ryu/ryu.h"
 #include "pairs.h"
 #include "pow2topow10.h"
 #include "numtostrs.h"
@@ -146,8 +146,11 @@ void new_mult_style(double d, char *buffer) {
     pow10 = -pow10;
     Pair pair = getPair(pow10);
     int16_t power = pair.power - 64;
-    power += (exp - 52);
+    power += exp - 52;
     __uint128_t product128 = ((__uint128_t)pair.mantissa) * mantissa;
+    uint64_t productLo64 = product128 >> 64;
+    if (unlikely(!(0 <= pow10 && pow10 < 26)) && unlikely(0/* ... */)) {
+    }
     uint64_t product = (uint64_t)(product128 >> (-power));
 
     // Write out digits
@@ -161,34 +164,11 @@ void new_mult_style(double d, char *buffer) {
     uint16_t lohi4 = lo8 / 10000;
     uint16_t hilo4 = hi8 % 10000;
     uint16_t hihi4 = hi8 / 10000;
-    __m128i values = _mm_setr_epi32(hihi4, hilo4, lohi4, lolo4);
-    __m128i hundreds = _mm_set1_epi32(100);
-    __m128i quots = _mm_srli_epi32(values, 2);
-    quots = _mm_mullo_epi32(quots, _mm_set1_epi32(5243));
-    quots = _mm_srli_epi32(quots, 17);
-    __m128i rems = _mm_sub_epi32(values, _mm_mullo_epi32(quots, hundreds));
-    __m128i interleaved = _mm_blend_epi16(quots, _mm_slli_epi32(rems, 16), 0xaa);
-    __m128i quots2 = _mm_mullo_epi16(interleaved, _mm_set1_epi16(205));
-    quots2 = _mm_srli_epi16(quots2, 11);
-    __m128i rems2 = _mm_sub_epi16(interleaved, _mm_mullo_epi16(quots2, _mm_set1_epi16(10)));
-    //__m128i interleaved2 = _mm_blendv_epi8(quots2, _mm_slli_epi16(rems2, 8), _mm_set1_epi8(0xaa));
-    __m128i interleaved2 = _mm_blendv_epi8(quots2, _mm_slli_epi16(rems2, 8), _mm_set1_epi16(0xff00));
-    interleaved2 = _mm_add_epi8(interleaved2, _mm_set1_epi8('0'));
-    _mm_storeu_si128((__m128i *)buffer, interleaved2);
-    /*__m128i tenDividers = _mm_set1_epi16(-13107);
-    __m128i quots2 = _mm_mullo_epi16(interleaved, tenDividers);
-    __m128i rems2 = _mm_sub_epi16(interleaved, quots2);
-    __m128i interleaved2 = _mm_unpacklo_epi8(quots2, rems2);
-    __m128i zeroChars = _mm_set1_epi8('0');
-    _mm_add_epi8(interleaved2, zeroChars);
-    _mm_storeu_si128((__m128i *)buffer, interleaved2);*/
-    //char bytes[16] __attribute__ ((aligned (16)));
-    //_mm_storeu_si128((__m128i *)buffer, interleaved);
     // Could gate each of these memcpys with an if statement, then finding the zero cutoff is easier
-    /*memcpy(buffer, kBigStrings[hihi4], 4);
+    memcpy(buffer, kBigStrings[hihi4], 4);
     memcpy(buffer + 4, kBigStrings[hilo4], 4);
     memcpy(buffer + 8, kBigStrings[lohi4], 4);
-    memcpy(buffer + 12, kBigStrings[lolo4], 4);*/
+    memcpy(buffer + 12, kBigStrings[lolo4], 4);
 
     // Remove trailing zeros
     char *mantissaEnd = buffer - 1; // Remove '.' if unnecessary
@@ -235,8 +215,9 @@ int main(int argc, const char * argv[]) {
     t(INFINITY);
     t(-INFINITY);
     t(NAN);
-    while (1 /* for profiling */) {
-        benchmark("new_mult_style", new_mult_style);
+    while (0 /* for profiling */) {
+        benchmark("ryu_style", ryu_style);
+        //benchmark("new_mult_style", new_mult_style);
     }
     //benchmark("c_style", c_style);
     //benchmark("cpp_style", cpp_style);
