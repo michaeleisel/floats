@@ -16,6 +16,8 @@ static int sum = 0;
 #define unlikely(x) __builtin_expect(x, 0)
 #define likely(x) __builtin_expect(x, 1)
 
+#define always_inline __attribute__((always_inline))
+
 void infoFromDouble(double d) {
     uint64_t bytes = 0;
     memcpy(&bytes, &d, sizeof(d));
@@ -114,8 +116,26 @@ __used static void u32(__m128i i) {
     printf("\n");
 }
 
+void fallback(double d, char *buffer) {
+    snprintf(buffer, 25, "%0.16e", d);
+}
+
+void tester(uint64_t mantissa, uint64_t exp) {
+    // Compute product
+    PowerConversion conversion = kPowerConversions[exp];
+    int16_t pow10 = conversion.power;
+    if (mantissa > conversion.mantissaCutoff) {
+        pow10--;
+    }
+    Pair pair = getPair(pow10);
+    int16_t power = pair.power;
+    power -= exp;
+    printf("%llu\n", power);
+}
+
 // Note that NaN and infinity are not allowed in JSON
-// todo: add subnormal/infinity tests
+// todo: add subnormal/infinity tests, zero test for all forms, e.g. negative
+// todo: is 17 digits still sufficient when we're rounding down and not to nearest?
 void new_mult_style(double d, char *buffer) {
     // Decompose double
     uint64_t bits = 0;
@@ -140,18 +160,19 @@ void new_mult_style(double d, char *buffer) {
     PowerConversion conversion = kPowerConversions[exp];
     int16_t pow10 = conversion.power;
     if (mantissa > conversion.mantissaCutoff) {
-        pow10++;
+        pow10--;
     }
-    pow10 -= 17;
-    pow10 = -pow10;
     Pair pair = getPair(pow10);
-    int16_t power = pair.power - 64;
-    power += exp - 52;
+    int16_t power = pair.power;
+    power -= exp;
     __uint128_t product128 = ((__uint128_t)pair.mantissa) * mantissa;
-    uint64_t productLo64 = product128 >> 64;
-    if (unlikely(!(0 <= pow10 && pow10 < 26)) && unlikely(0/* ... */)) {
+    uint64_t product = (uint64_t)(product128 >> power);
+    if (unlikely(!(0 <= pow10 && pow10 < 26))) {
+        if (unlikely((product128 + mantissa) >> power != product)) {
+            fallback(d, buffer);
+            return;
+        }
     }
-    uint64_t product = (uint64_t)(product128 >> (-power));
 
     // Write out digits
     uint64_t first = product / 10000000000000000ULL;
@@ -190,7 +211,7 @@ void new_mult_style(double d, char *buffer) {
         (*buffer++) = '-';
         target = -target;
     }
-    (*buffer++) = 'e';
+    (*buffer++) = 'E';
     const char *string = kBigStrings[target];
     if (unlikely(target >= 100)) {
         (*buffer++) = string[1];
@@ -211,20 +232,42 @@ void t(double d) {
     printf("%s\n", buffer);
 }
 
+void run_shift_test() {
+    uint64_t minMantissa = 1ULL << 53;
+    uint64_t maxMantissa = (1ULL << 54) - 1;
+    for (int exp = -200; exp < 200; exp++) {
+        tester(minMantissa, exp);
+        tester(maxMantissa, exp);
+    }
+}
+
+void run_tests() {
+    for (int i = 0; i < kNumbersSize; i++) {
+        char actual[30] = {0};
+        char expected[30] = {0};
+        new_mult_style(kNumbers[i], actual);
+        ryu_style(kNumbers[i], expected);
+        if (strcmp(expected, actual)) {
+            abort();
+        }
+    }
+}
+
 int main(int argc, const char * argv[]) {
+    run_tests();
     t(INFINITY);
     t(-INFINITY);
     t(NAN);
-    while (0 /* for profiling */) {
-        benchmark("ryu_style", ryu_style);
-        //benchmark("new_mult_style", new_mult_style);
+    while (1 /* for profiling */) {
+        //benchmark("ryu_style", ryu_style);
+        benchmark("new_mult_style", new_mult_style);
     }
     //benchmark("c_style", c_style);
     //benchmark("cpp_style", cpp_style);
-    benchmark("ryu_style", ryu_style);
-    //benchmark("new_style", new_style);
-    benchmark("new_mult_style", new_mult_style);
-    //benchmark("absl_go", absl_go);
+    for (int i = 0; i < 3; i++) {
+        benchmark("ryu_style     ", ryu_style);
+        benchmark("new_mult_style", new_mult_style);
+    }
     if (sum == 0) {
         printf("yo\n");
     }

@@ -336,10 +336,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/floats",
 				);
-				OTHER_CFLAGS = (
-					"-DHAS_UINT128",
-					"-DRYU_FLOAT_FULL_TABLE",
-				);
+				OTHER_CFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USER_HEADER_SEARCH_PATHS = (
 					"/Users/meisel/projects/abseil-cpp",
@@ -360,10 +357,7 @@
 					"$(PROJECT_DIR)/floats",
 				);
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = (
-					"-DHAS_UINT128",
-					"-DRYU_FLOAT_FULL_TABLE",
-				);
+				OTHER_CFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USER_HEADER_SEARCH_PATHS = (
 					"/Users/meisel/projects/abseil-cpp",

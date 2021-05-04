@@ -24,6 +24,8 @@ def pow10_mantissa_and_exp
     raise if big.length < 64
     s = big[0...64]
     pow = big.length - 1000
+    pow = pow - 52 - 64 # 52 for double mantissa, 64 for this int mantissa
+    pow = -pow # It's how much to offset it right
 
     "{0x#{s.to_i(2).to_s(16)}, #{pow}}"
   end
@@ -45,13 +47,15 @@ def lead_pad(s, n)
 end
 
 def pow2topow10_pairs
-  pairs = (-200..200).map do |i|
+  # pairs = (-200..200).map do |i|
+  pairs = (0..200).map do |i|
     n = (2 ** i)
     exp = n.to_s.length
-    next [exp, 2 ** 64 - 1] if exp == (2 * n).to_s.length
+    ret = -exp + 17 # 17 digits
+    next [ret, 2 ** 64 - 1] if exp == (2 * n).to_s.length
     f = ("1" + ("0" * exp)).to_f
     _, _, mantissa = float_cmps(f)
-    [exp, mantissa]
+    [ret, mantissa]
   end
   pairs.map do |exp, mantissa|
     hex = mantissa.to_i.to_s(16)
@@ -68,5 +72,5 @@ def n_to_s_cache
   end.each_slice(5).map { |s| s.join(", ") }.join(",\n")
 end
 
-puts n_to_s_cache
-# puts pow10_mantissa_and_exp
+# puts n_to_s_cache
+puts pow10_mantissa_and_exp
