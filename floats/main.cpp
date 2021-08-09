@@ -53,40 +53,8 @@ void ryu_style(double d, char *buffer) {
     //d2exp_buffered(d, buffer);
 }
 
-void new_style(double d, char *buffer) {
-    uint64_t bits = 0;
-    __uint128_t sum = 0;
-    memcpy(&bits, &d, sizeof(d));
-    uint64_t mantissa = (bits & ((~0ULL) >> 12)) | (1ULL << 52);
-    int idx = 50;
-    while (mantissa) {
-        sum += (mantissa & 1) * pows[idx];
-        idx += 1;
-        mantissa >>= 1;
-        /*sum += pows[idx];
-        int shift = __builtin_ctzll(mantissa) + 1;
-        idx += shift;
-        mantissa >>= shift;*/
-    }
-    memcpy(buffer, &sum, sizeof(sum));
-}
-
 void cpp_style(double d, char *buffer) {
     std::to_string(d);
-}
-
-void handleUncommonCases(double d, char *buffer) {
-    if (std::isinf(d)) {
-        if (d < 0) {
-            (*buffer++) = '-';
-        }
-        strcpy(buffer, "Infinity");
-    } else if (std::isnan(d)) {
-        strcpy(buffer, "NaN");
-    } else if (!std::isnormal(d)) {
-        // This logic is platform-specific anyways, so let the platform handle it
-        sprintf(buffer, "%0.17e", d);
-    }
 }
 
 __used static void u8(__m128i i) {
@@ -116,10 +84,6 @@ __used static void u32(__m128i i) {
     printf("\n");
 }
 
-void fallback(double d, char *buffer) {
-    snprintf(buffer, 25, "%0.16e", d);
-}
-
 void tester(uint64_t mantissa, uint64_t exp) {
     // Compute product
     PowerConversion conversion = kPowerConversions[exp];
@@ -131,6 +95,42 @@ void tester(uint64_t mantissa, uint64_t exp) {
     int16_t power = pair.power;
     power -= exp;
     printf("%llu\n", power);
+}
+
+void fallback(double d, char *buffer) {
+    snprintf(buffer, 25, "%0.16e", d);
+}
+
+void new_style(double d, char *buffer) {
+    uint64_t bits = 0;
+    __uint128_t sum = 0;
+    memcpy(&bits, &d, sizeof(d));
+    uint64_t mantissa = (bits & ((~0ULL) >> 12)) | (1ULL << 52);
+    int idx = 50;
+    while (mantissa) {
+        sum += (mantissa & 1) * pows[idx];
+        idx += 1;
+        mantissa >>= 1;
+        /*sum += pows[idx];
+        int shift = __builtin_ctzll(mantissa) + 1;
+        idx += shift;
+        mantissa >>= shift;*/
+    }
+    memcpy(buffer, &sum, sizeof(sum));
+}
+
+void handleUncommonCases(double d, char *buffer) {
+    if (std::isinf(d)) {
+        if (d < 0) {
+            (*buffer++) = '-';
+        }
+        strcpy(buffer, "Infinity");
+    } else if (std::isnan(d)) {
+        strcpy(buffer, "NaN");
+    } else if (!std::isnormal(d)) {
+        // This logic is platform-specific anyways, so let the platform handle it
+        sprintf(buffer, "%0.17e", d);
+    }
 }
 
 // Note that NaN and infinity are not allowed in JSON
@@ -254,7 +254,7 @@ void run_tests() {
 }
 
 int main(int argc, const char * argv[]) {
-    run_tests();
+    //run_tests();
     t(INFINITY);
     t(-INFINITY);
     t(NAN);
