@@ -258,7 +258,7 @@ int main(int argc, const char * argv[]) {
     t(INFINITY);
     t(-INFINITY);
     t(NAN);
-    while (1 /* for profiling */) {
+    while (0 /* for profiling */) {
         //benchmark("ryu_style", ryu_style);
         benchmark("new_mult_style", new_mult_style);
     }
